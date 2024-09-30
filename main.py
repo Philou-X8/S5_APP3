@@ -32,8 +32,20 @@ def get_peaks(freq_signal, should_plot):
         plt.plot(freq_signal)
         plt.show()
 
-    return freq_signal[peaks1[1:33]]
+    return peaks1[1:33], freq_signal[peaks1[1:33]] # returns position X of peaks, and value Y of peaks
 
+def get_sounds(harmonic_base, harmonic_gains, N, Fe):
+    print('get_sounds: ')
+
+    k = np.arange(1, 33)
+    harmonic_arr = harmonic_base * k
+    sound_freq = (harmonic_arr/Fe)*N # convert sound from Hz to discreet index
+
+    print(k)
+    print(harmonic_arr)
+    print(sound_freq)
+
+    return 0
 
 def note_guitare(file_name, should_plot):
     sample_arr, sample_rate = sf.read(file_name)
@@ -45,8 +57,9 @@ def note_guitare(file_name, should_plot):
     freq_gain = np.abs( np.fft.fft(sample_arr) )
     freq_db = 20*np.log10(freq_gain)
 
-    harmonics_gains = get_peaks(freq_gain, True) # get gains of 32 first harmonics
+    harmonics_freq, harmonics_gains = get_peaks(freq_gain, False) # get gains of 32 first harmonics
     print(harmonics_gains)
+    get_sounds(440.0, harmonics_gains, sample_count, sample_rate)
 
     make_envelop(sample_arr, sample_rate, False)
 
