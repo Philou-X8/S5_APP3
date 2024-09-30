@@ -34,18 +34,34 @@ def get_peaks(freq_signal, should_plot):
 
     return peaks1[1:33], freq_signal[peaks1[1:33]] # returns position X of peaks, and value Y of peaks
 
-def get_sounds(harmonic_base, harmonic_gains, N, Fe):
+def get_sounds(harmonic_base, harmonic_gains, N, Fe, should_plot):
     print('get_sounds: ')
 
     k = np.arange(1, 33)
     harmonic_arr = harmonic_base * k
-    sound_freq = (harmonic_arr/Fe)*N # convert sound from Hz to discreet index
+    sound_freq = np.round( (harmonic_arr/Fe)*N ) # convert sound from Hz to discreet index
+    sound_freq = sound_freq.astype(int)
 
     print(k)
     print(harmonic_arr)
     print(sound_freq)
 
-    return 0
+    X = np.zeros(N)
+    X[sound_freq] = harmonic_gains
+
+    clean_sound = np.abs(np.fft.ifft(X))
+
+    if should_plot:
+        plt.subplot(2, 1, 1)
+        plt.title('pure frequencies')
+        plt.plot(X)
+
+        plt.subplot(2, 1, 2)
+        plt.title('synth soundwave')
+        plt.plot(clean_sound)
+        plt.show()
+
+    return clean_sound
 
 def note_guitare(file_name, should_plot):
     sample_arr, sample_rate = sf.read(file_name)
@@ -59,7 +75,7 @@ def note_guitare(file_name, should_plot):
 
     harmonics_freq, harmonics_gains = get_peaks(freq_gain, False) # get gains of 32 first harmonics
     print(harmonics_gains)
-    get_sounds(440.0, harmonics_gains, sample_count, sample_rate)
+    get_sounds(440.0, harmonics_gains, sample_count, sample_rate, True)
 
     make_envelop(sample_arr, sample_rate, False)
 
@@ -78,6 +94,6 @@ def note_guitare(file_name, should_plot):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    note_guitare('note_guitare_lad.wav', True)
+    note_guitare('note_guitare_lad.wav', False)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
