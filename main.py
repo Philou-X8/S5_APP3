@@ -120,26 +120,27 @@ def make_envelop(sample_arr, sample_count, should_plot):
         if should_plot: print('test N = ' + str(test_N) + ' , mag = ' + str(mag))
         if should_plot: print('N low = ' + str(N_l) + ' , N high = ' + str(N_h) + '\n')
 
+    print('Chosen N order: ' + str(test_N) + ' , mag (dB): ' + str(mag))
     impulse_response = reponse_echelon(test_N, w)
     envelop = np.convolve(sample_abs,impulse_response)
 
     if should_plot:
         plt.subplot(2, 1, 1)
         plt.title('Envelop impulse response')
-        plt.plot(impulse_response)
+        plt.plot(np.abs(impulse_response))
         plt.subplot(2, 1, 2)
         plt.title('Envelop')
-        plt.plot(envelop)
+        plt.plot(np.abs(envelop))
         plt.show()
 
     return envelop[0:sample_count]
 
 def get_peaks(freq_signal, should_plot):
 
-    peaks1, _ = sp.find_peaks(freq_signal, distance=1000, prominence=1, height=2)
+    peaks1, _ = sp.find_peaks(freq_signal, distance=1000, prominence=1)
     if should_plot:
         plt.title('peak finding')
-        plt.plot(peaks1, freq_signal[peaks1], 'xr')
+        plt.plot(peaks1[1:33], freq_signal[peaks1[1:33]], 'xr')
         plt.plot(freq_signal)
         plt.show()
 
@@ -223,7 +224,7 @@ def note_guitare(file_name, should_plot):
     sound = get_sounds(466.2, harmonics_gains, sample_count, sample_rate, False)
 
     envelop = make_envelop(sample_arr, sample_count, False)
-    if should_plot: print('len sample: ' + str(sample_count) + ' , len envelop: ' + str(len(envelop)))
+    # if should_plot: print('len sample: ' + str(sample_count) + ' , len envelop: ' + str(len(envelop)))
     synth = sound * envelop
     sf.write('synth_sound_guitar.wav', 20*synth, sample_rate)
 
@@ -267,6 +268,8 @@ def note_basson(file_name, should_plot):
     filtered = np.fft.fft(sample_arr) * np.fft.fft(band_filter)
     cleaned_sound = np.fft.ifft(filtered)
     sf.write('synth_basson.wav', 1 * np.real(cleaned_sound), sample_rate)
+
+    get_peaks(np.fft.fft(cleaned_sound), True)
 
     x_scale = np.arange(-sample_count/2, sample_count/2)
 
