@@ -8,15 +8,35 @@ import matplotlib.pyplot as plt
 import soundfile as sf
 import scipy.signal as sp
 
+def try_n(N, w):
+    ret = np.sum(np.exp(-1j * w * np.arange(N)) / N)
+    return np.abs(ret)
 
 def make_envelop(sample_arr, sample_rate, should_plot):
     sample_arr = abs(sample_arr)
 
-    N = 64 # ordre
-    f = np.pi / 1000 # freq de coupure
-    Fe = sample_rate # échantillonnage
-    m = N / 8 # position (index) de la raie
-    K = 2 * m + 1
+    w = np.pi / 1000 # freq normalizer (rad/sample)
+    N_l = 1
+    N_h = 2000
+    mag = 20*np.log10( try_n(N_l, w) )
+    ret_found = False
+    failsafe = 20
+    while not ret_found and failsafe > 1: # binary search for N
+        test_N = np.round((N_l + N_h) / 2)
+        mag = 20*np.log10( try_n(test_N, w) )
+        if mag > -3.0:
+            N_l = test_N
+        if mag < -3.0:
+            N_h = test_N
+
+        print('test N = ' + str(test_N) + ' , mag = ' + str(mag))
+        print('N low = ' + str(N_l) + ' , N high = ' + str(N_h) + '\n')
+        if N_h - N_l <= 1:
+            ret_found = True
+
+        failsafe = failsafe - 1
+        if failsafe < 1:
+            ret_found = True
 
     if should_plot:
         plt.plot(sample_arr)
