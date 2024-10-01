@@ -9,6 +9,67 @@ import soundfile as sf
 import scipy.signal as sp
 
 
+def band_cut(sample_arr, sample_count, sample_rate, should_plot):
+    N = 6000
+    K = 2 * (N * 40 / sample_rate) + 1
+    m_low = int( sample_count * (960 / sample_rate) )
+    m_high = int( sample_count * (1040 / sample_rate) )
+    print('m_low: ' + str(m_low) + 'm_high: ' + str(m_high))
+    m_range = np.arange(-sample_count/2, sample_count/2)
+
+    n = np.arange(-N/2, N/2)
+    filter2_h = np.sin(np.pi*n*K/N) / (N * np.sin(np.pi*n/N) + 1e-20)
+    filter2_h[int(N/2)] = K / N
+    #filter2_H[int(N/2)] = 1
+    buffer = np.zeros(sample_count)
+    buffer[0:len(filter2_h)] = filter2_h
+    filter2_H = np.fft.fft(filter2_h, sample_count)
+
+    print('len:')
+    print(len(filter2_H))
+
+    center_range = np.arange(sample_count)
+    #print(len(center_range))
+    #filter2_H[0] = 1
+    band_pass = filter2_H * ((-1) ** center_range)
+    plt.plot(np.fft.fftshift(np.abs(band_pass)))
+    plt.show()
+    #band_pass = np.ones(sample_count) - band_pass
+
+    plt.subplot(2, 1, 1)
+    plt.title('filter (h)')
+    plt.plot( np.abs(filter2_h) )
+    plt.subplot(2, 1, 2)
+    plt.title('filter (H)')
+    plt.plot(np.fft.fftshift(np.abs(filter2_H)) )
+    plt.show()
+
+    sample_db = 20*np.log10( np.abs( np.fft.fft(sample_arr) ) )
+
+    #20 * np.log10(np.abs(h))
+    #plt.stem(np.fft.fftshift( np.fft.fft(filter2_H) ) )
+
+    filtered = np.fft.fft(sample_arr) * band_pass
+    filtered = filtered * band_pass # apply filter again
+
+    result_sound = np.fft.ifft(filtered)
+
+    plt.show()
+    if should_plot:
+        plt.subplot(3, 1, 1)
+        plt.title('sample freq')
+        plt.plot(np.fft.fftshift(np.abs(np.fft.fft(sample_arr))))
+        plt.subplot(3, 1, 2)
+        plt.title('filter (H)')
+        plt.plot(np.fft.fftshift(np.abs(band_pass)))
+        #plt.plot(m_range, np.fft.fftshift(filter_h))
+        plt.subplot(3, 1, 3)
+        plt.title('filtered')
+        plt.plot(np.abs(result_sound))
+        plt.show()
+
+    return result_sound
+
 def reponse_echelon(Order, fc):
 
     n = np.arange(-Order/2, Order/2 +1)
@@ -185,9 +246,29 @@ def note_guitare(file_name, should_plot):
         plt.show()
 
 
+def note_basson(file_name, should_plot):
+    sample_arr, sample_rate = sf.read(file_name)
+    sample_count = len(sample_arr)
+    if should_plot: print('sample rate: ' + str(sample_rate))
+
+    denoise = band_cut(sample_arr, sample_count, sample_rate, True)
+
+    if should_plot:
+        plt.subplot(4, 1, 1)
+        plt.title('Original sound')
+        plt.plot(sample_arr)
+
+        plt.subplot(4, 1, 2)
+        plt.title('band cut filter')
+        plt.plot(denoise)
+
+        plt.show()
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    note_guitare('note_guitare_lad.wav', True)
+    note_basson('note_basson_plus_sinus_1000_hz.wav', True)
+
+    note_guitare('note_guitare_lad.wav', False)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
