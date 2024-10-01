@@ -8,17 +8,28 @@ import matplotlib.pyplot as plt
 import soundfile as sf
 import scipy.signal as sp
 
+
+def reponse_echelon(Order, fc):
+
+    n = np.arange(-Order/2, Order/2 +1)
+    k = (fc * Order /np.pi) +1
+    h = np.sin(np.pi*n*k/Order) / (Order * np.sin(np.pi*n/Order) )
+
+    return h
+
+
 def try_n(N, w):
     ret = np.sum(np.exp(-1j * w * np.arange(N)) / N)
     return np.abs(ret)
 
-def make_envelop(sample_arr, sample_rate, should_plot):
+
+def make_envelop(sample_arr, sample_count, should_plot):
     sample_abs = np.abs(sample_arr)
 
     w = np.pi / 1000 # freq normalizer (rad/sample)
     N_l = 1
     N_h = 2000
-    mag = 20*np.log10( try_n(N_l, w) )
+    test_N = 0
     ret_found = False
     failsafe = 20
     while not ret_found and failsafe > 1: # binary search for N
@@ -29,41 +40,31 @@ def make_envelop(sample_arr, sample_rate, should_plot):
         if mag < -3.0:
             N_h = test_N
 
-        print('test N = ' + str(test_N) + ' , mag = ' + str(mag))
-        print('N low = ' + str(N_l) + ' , N high = ' + str(N_h) + '\n')
-        if N_h - N_l <= 1:
+        if N_h - N_l <= 1: # check if we're done
             ret_found = True
+        failsafe = failsafe - 1 # check failsafe
 
-        failsafe = failsafe - 1
-        if failsafe < 1:
-            ret_found = True
+        if should_plot: print('test N = ' + str(test_N) + ' , mag = ' + str(mag))
+        if should_plot: print('N low = ' + str(N_l) + ' , N high = ' + str(N_h) + '\n')
+
+
+    impulse_response = reponse_echelon(test_N, w)
+    envelop = np.convolve(sample_abs,impulse_response)
 
     if should_plot:
-        plt.plot(sample_arr)
+        plt.subplot(2, 1, 1)
+        plt.title('Envelop impulse response')
+        plt.plot(impulse_response)
+        plt.subplot(2, 1, 2)
         plt.title('Envelop')
+        plt.plot(envelop)
         plt.show()
 
-
-    size = int(len(sample_arr))
-    copium = np.zeros(size)
-    damping = 0
-    for itt in range(size):
-        damping = 0.99 * damping + 0.01 * (2*sample_abs[itt])
-        copium[itt] = damping
-    copium2 = np.zeros(size)
-    damping2 = 0
-    for itt in range(size):
-        damping2 = 0.999 * damping2 + 0.001 * copium[itt]
-        copium2[itt] = damping2
-
-    plt.plot(sample_abs, 'b')
-    plt.plot(copium2, 'g')
-    plt.show()
-    return copium2
+    return envelop[0:sample_count]
 
 def get_peaks(freq_signal, should_plot):
 
-    peaks1, _ = sp.find_peaks(freq_signal, distance=1000, prominence=1)
+    peaks1, _ = sp.find_peaks(freq_signal, distance=1000, prominence=1, height=2)
     if should_plot:
         plt.title('peak finding')
         plt.plot(peaks1, freq_signal[peaks1], 'xr')
@@ -73,21 +74,23 @@ def get_peaks(freq_signal, should_plot):
     return peaks1[1:33], freq_signal[peaks1[1:33]] # returns position X of peaks, and value Y of peaks
 
 def get_sounds(harmonic_base, harmonic_gains, N, Fe, should_plot):
-    print('get_sounds: ')
+    if should_plot: print('get_sounds: ')
 
     k = np.arange(1, 33)
     harmonic_arr = harmonic_base * k
     sound_freq = np.round( (harmonic_arr/Fe)*N ) # convert sound from Hz to discreet index
     sound_freq = sound_freq.astype(int)
 
-    print(k)
-    print(harmonic_arr)
-    print(sound_freq)
+    if should_plot:
+        print('k: ' + str(k))
+        print('harmonic_arr: ' + str(harmonic_arr))
+        print('sound_freq: ' + str(harmonic_arr))
 
     X = np.zeros(N)
     X[sound_freq] = harmonic_gains
 
-    clean_sound = np.abs(np.fft.ifft(X))
+    #clean_sound = np.abs(np.fft.ifft(X))
+    clean_sound = np.real(np.fft.ifft(X))
 
     if should_plot:
         plt.subplot(2, 1, 1)
@@ -104,7 +107,7 @@ def get_sounds(harmonic_base, harmonic_gains, N, Fe, should_plot):
 def note_guitare(file_name, should_plot):
     sample_arr, sample_rate = sf.read(file_name)
     sample_count = len(sample_arr)
-    print('sample rate: ' + str(sample_rate))
+    if should_plot: print('sample rate: ' + str(sample_rate))
 
     x = range(0, len(sample_arr))
 
@@ -112,29 +115,46 @@ def note_guitare(file_name, should_plot):
     freq_db = 20*np.log10(freq_gain)
 
     harmonics_freq, harmonics_gains = get_peaks(freq_gain, False) # get gains of 32 first harmonics
-    print(harmonics_gains)
+    if should_plot: print('harmonics_gains: ' + str(harmonics_gains))
     sound = get_sounds(440.0, harmonics_gains, sample_count, sample_rate, False)
 
-    envelop = make_envelop(sample_arr, sample_rate, False)
-
-    synth = 10*sound * envelop
-    sf.write('synth_sound_guitar.wav', synth, sample_rate)
+    envelop = make_envelop(sample_arr, sample_count, False)
+    if should_plot: print('len sample: ' + str(sample_count) + ' , len envelop: ' + str(len(envelop)))
+    synth = sound * envelop
+    sf.write('synth_sound_guitar.wav', 20*synth, sample_rate)
 
     if should_plot:
-        plt.subplot(2, 1, 1)
-        plt.title('Guitare sound')
+        plt.subplot(4, 1, 1)
+        plt.title('Original sound')
         plt.plot(x, sample_arr)
 
+        plt.subplot(4, 1, 2)
+        plt.title('Fadeout envelop')
+        plt.plot(x, envelop)
+
+        plt.subplot(4, 1, 3)
+        plt.title('Synthesised wave')
+        plt.plot(x, sound)
+
+        plt.subplot(4, 1, 4)
+        plt.title('Frequency analysis')
+        #plt.plot(freq_gain)
+        plt.plot(np.fft.fftshift(freq_db))
+        plt.show()
+
+
+        plt.subplot(2, 1, 1)
+        plt.title('Original sound')
+        plt.plot(x, sample_arr)
         plt.subplot(2, 1, 2)
-        plt.title('freq')
-        plt.plot(freq_gain)
-        #plt.plot(np.fft.fftshift(freq_db))
+        plt.title('Final sound')
+        plt.plot(synth)
         plt.show()
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    note_guitare('note_guitare_lad.wav', False)
+    note_guitare('note_guitare_lad.wav', True)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
