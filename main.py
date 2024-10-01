@@ -11,6 +11,8 @@ import scipy.signal as sp
 
 def band_cut(sample_arr, sample_count, sample_rate, should_plot):
     N = 6000
+    m = (N * 1000 / sample_rate)
+    w = 2*np.pi*1000/sample_rate
     K = 2 * (N * 40 / sample_rate) + 1
     m_low = int( sample_count * (960 / sample_rate) )
     m_high = int( sample_count * (1040 / sample_rate) )
@@ -28,13 +30,17 @@ def band_cut(sample_arr, sample_count, sample_rate, should_plot):
     print('len:')
     print(len(filter2_H))
 
-    center_range = np.arange(sample_count)
+    center_range = np.arange(-sample_count/2, sample_count/2)
+    diracte = np.zeros(sample_count)
+    diracte[0] = 1
+
     #print(len(center_range))
-    #filter2_H[0] = 1
-    band_pass = filter2_H * ((-1) ** center_range)
-    plt.plot(np.fft.fftshift(np.abs(band_pass)))
+    #band_pass = filter2_H * ((-1) ** center_range)
+    band_pass = diracte - 2*filter2_H * np.cos(w*center_range) # <-----------------------
+
+    plt.plot(np.fft.fftshift(np.real(np.fft.fft(band_pass))))
     plt.show()
-    #band_pass = np.ones(sample_count) - band_pass
+    #band_pass = band_pass[]
 
     plt.subplot(2, 1, 1)
     plt.title('filter (h)')
@@ -61,7 +67,7 @@ def band_cut(sample_arr, sample_count, sample_rate, should_plot):
         plt.plot(np.fft.fftshift(np.abs(np.fft.fft(sample_arr))))
         plt.subplot(3, 1, 2)
         plt.title('filter (H)')
-        plt.plot(np.fft.fftshift(np.abs(band_pass)))
+        plt.plot(np.fft.fftshift(np.abs(np.fft.fft(band_pass))))
         #plt.plot(m_range, np.fft.fftshift(filter_h))
         plt.subplot(3, 1, 3)
         plt.title('filtered')
