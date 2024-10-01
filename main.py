@@ -78,8 +78,8 @@ def get_sounds(harmonic_base, harmonic_gains, N, Fe, should_plot):
 
     k = np.arange(1, 33)
     harmonic_arr = harmonic_base * k
-    sound_freq = np.round( (harmonic_arr/Fe)*N ) # convert sound from Hz to discreet index
-    sound_freq = sound_freq.astype(int)
+    sound_freq = np.round( (harmonic_arr/Fe)*N ).astype(int) # convert sound from Hz to discreet index
+    #sound_freq = sound_freq.astype(int)
 
     if should_plot:
         print('k: ' + str(k))
@@ -104,6 +104,41 @@ def get_sounds(harmonic_base, harmonic_gains, N, Fe, should_plot):
 
     return clean_sound
 
+def synth_note(base_freq, harmonics_gains, sample_count, sample_rate, envelop, crop_len=0):
+    sound = get_sounds(base_freq, harmonics_gains, sample_count, sample_rate, False)
+    synth = sound * envelop
+    if crop_len != 0 :
+        synth = synth[0:int(sample_count/crop_len)]
+    return synth
+
+def play_music(file_name, harmonics_gains, sample_count, sample_rate, envelop):
+
+    sol = synth_note(392.0, harmonics_gains, sample_count, sample_rate, envelop, crop_len=3)
+    mi_b = synth_note(311.1, harmonics_gains, sample_count, sample_rate, envelop, crop_len=3)
+    fa = synth_note(349.2, harmonics_gains, sample_count, sample_rate, envelop, crop_len=3)
+    re = synth_note(293.7, harmonics_gains, sample_count, sample_rate, envelop, crop_len=3)
+
+    silence = np.zeros(int(sample_count / 6))
+    small_silence = np.zeros(int(sample_count / 12))
+
+    final = sol
+    #final = np.concatenate((final, small_silence))
+    final = np.concatenate((final, sol))
+    #final = np.concatenate((final, small_silence))
+    final = np.concatenate((final, sol))
+    #final = np.concatenate((final, small_silence))
+    final = np.concatenate((final, mi_b))
+    final = np.concatenate((final, silence))
+    final = np.concatenate((final, fa))
+    #final = np.concatenate((final, small_silence))
+    final = np.concatenate((final, fa))
+    #final = np.concatenate((final, small_silence))
+    final = np.concatenate((final, fa))
+    #final = np.concatenate((final, small_silence))
+    final = np.concatenate((final, re))
+    sf.write(file_name, 20 * final, sample_rate)
+
+
 def note_guitare(file_name, should_plot):
     sample_arr, sample_rate = sf.read(file_name)
     sample_count = len(sample_arr)
@@ -122,6 +157,8 @@ def note_guitare(file_name, should_plot):
     if should_plot: print('len sample: ' + str(sample_count) + ' , len envelop: ' + str(len(envelop)))
     synth = sound * envelop
     sf.write('synth_sound_guitar.wav', 20*synth, sample_rate)
+
+    play_music('synth_music.wav', harmonics_gains, sample_count, sample_rate, envelop)
 
     if should_plot:
         plt.subplot(4, 1, 1)
