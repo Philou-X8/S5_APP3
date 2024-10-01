@@ -26,7 +26,7 @@ def try_n(N, w):
 def make_envelop(sample_arr, sample_count, should_plot):
     sample_abs = np.abs(sample_arr)
 
-    w = np.pi / 1000 # freq normalizer (rad/sample)
+    w = np.pi / 1000 # freq normalized (rad/sample)
     N_l = 1
     N_h = 2000
     test_N = 0
@@ -46,7 +46,6 @@ def make_envelop(sample_arr, sample_count, should_plot):
 
         if should_plot: print('test N = ' + str(test_N) + ' , mag = ' + str(mag))
         if should_plot: print('N low = ' + str(N_l) + ' , N high = ' + str(N_h) + '\n')
-
 
     impulse_response = reponse_echelon(test_N, w)
     envelop = np.convolve(sample_abs,impulse_response)
@@ -79,7 +78,6 @@ def get_sounds(harmonic_base, harmonic_gains, N, Fe, should_plot):
     k = np.arange(1, 33)
     harmonic_arr = harmonic_base * k
     sound_freq = np.round( (harmonic_arr/Fe)*N ).astype(int) # convert sound from Hz to discreet index
-    #sound_freq = sound_freq.astype(int)
 
     if should_plot:
         print('k: ' + str(k))
@@ -144,8 +142,6 @@ def note_guitare(file_name, should_plot):
     sample_count = len(sample_arr)
     if should_plot: print('sample rate: ' + str(sample_rate))
 
-    x = range(0, len(sample_arr))
-
     freq_gain = np.abs( np.fft.fft(sample_arr) )
     freq_db = 20*np.log10(freq_gain)
 
@@ -163,15 +159,15 @@ def note_guitare(file_name, should_plot):
     if should_plot:
         plt.subplot(4, 1, 1)
         plt.title('Original sound')
-        plt.plot(x, sample_arr)
+        plt.plot(sample_arr)
 
         plt.subplot(4, 1, 2)
         plt.title('Fadeout envelop')
-        plt.plot(x, envelop)
+        plt.plot(envelop)
 
         plt.subplot(4, 1, 3)
         plt.title('Synthesised wave')
-        plt.plot(x, sound)
+        plt.plot(sound)
 
         plt.subplot(4, 1, 4)
         plt.title('Frequency analysis')
@@ -182,7 +178,7 @@ def note_guitare(file_name, should_plot):
 
         plt.subplot(2, 1, 1)
         plt.title('Original sound')
-        plt.plot(x, sample_arr)
+        plt.plot(sample_arr)
         plt.subplot(2, 1, 2)
         plt.title('Final sound')
         plt.plot(synth)
