@@ -13,7 +13,7 @@ def try_n(N, w):
     return np.abs(ret)
 
 def make_envelop(sample_arr, sample_rate, should_plot):
-    sample_arr = abs(sample_arr)
+    sample_abs = np.abs(sample_arr)
 
     w = np.pi / 1000 # freq normalizer (rad/sample)
     N_l = 1
@@ -42,6 +42,24 @@ def make_envelop(sample_arr, sample_rate, should_plot):
         plt.plot(sample_arr)
         plt.title('Envelop')
         plt.show()
+
+
+    size = int(len(sample_arr))
+    copium = np.zeros(size)
+    damping = 0
+    for itt in range(size):
+        damping = 0.99 * damping + 0.01 * (2*sample_abs[itt])
+        copium[itt] = damping
+    copium2 = np.zeros(size)
+    damping2 = 0
+    for itt in range(size):
+        damping2 = 0.999 * damping2 + 0.001 * copium[itt]
+        copium2[itt] = damping2
+
+    plt.plot(sample_abs, 'b')
+    plt.plot(copium2, 'g')
+    plt.show()
+    return copium2
 
 def get_peaks(freq_signal, should_plot):
 
@@ -95,7 +113,7 @@ def note_guitare(file_name, should_plot):
 
     harmonics_freq, harmonics_gains = get_peaks(freq_gain, False) # get gains of 32 first harmonics
     print(harmonics_gains)
-    get_sounds(440.0, harmonics_gains, sample_count, sample_rate, True)
+    get_sounds(440.0, harmonics_gains, sample_count, sample_rate, False)
 
     make_envelop(sample_arr, sample_rate, False)
 
