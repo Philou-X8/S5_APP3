@@ -32,26 +32,27 @@ def band_cut(sample_arr, sample_count, sample_rate, should_plot):
     print('len:')
     print(len(filter2_H))
 
-    #center_range = np.arange(-sample_count/2, sample_count/2)
-    center_range = np.arange(sample_count)
+    center_range = np.arange(-sample_count/2, sample_count/2)
+    n_range = np.arange(sample_count)
     diracte = np.zeros(sample_count)
     diracte[0] = 1
 
     #print(len(center_range))
     #band_pass = filter2_H * ((-1) ** center_range)
-    band_pass = diracte - 2.0 * np.fft.ifft(filter2_H) * np.cos(w*center_range) # <-----------------------
+    band_pass = diracte - 2.0 * np.fft.ifft(filter2_H) * np.cos(w*n_range) # <-----------------------
 
-    plt.plot(center_range, np.fft.fftshift(np.abs(np.fft.fft(band_pass))))
-    plt.show()
+    #plt.plot(center_range, np.fft.fftshift(np.abs(np.fft.fft(band_pass))))
+    #plt.show()
     #band_pass = band_pass[]
-
-    plt.subplot(2, 1, 1)
-    plt.title('pulse (h)')
-    plt.plot(n, np.abs(filter2_h) )
-    plt.subplot(2, 1, 2)
-    plt.title('pulse (H)')
-    plt.plot(center_range, np.fft.fftshift(np.abs(filter2_H)) )
-    plt.show()
+    if should_plot:
+        plt.subplot(2, 1, 1)
+        plt.title('pulse (h)')
+        plt.plot(n, np.abs(filter2_h) )
+        plt.subplot(2, 1, 2)
+        plt.title('pulse (H)')
+        plt.plot(center_range, np.fft.fftshift(np.abs(filter2_H)) )
+        plt.xlim(-1000, 1000)
+        plt.show()
 
     sample_db = 20*np.log10( np.abs( np.fft.fft(sample_arr) ) )
 
@@ -68,16 +69,18 @@ def band_cut(sample_arr, sample_count, sample_rate, should_plot):
         plt.subplot(3, 1, 1)
         plt.title('sample freq')
         plt.plot(center_range, np.fft.fftshift(np.abs(np.fft.fft(sample_arr))))
+        plt.xlim(-10000, 10000)
         plt.subplot(3, 1, 2)
         plt.title('filter (H)')
         plt.plot(center_range, np.fft.fftshift(np.abs(np.fft.fft(band_pass))))
+        plt.xlim(-10000, 10000)
         #plt.plot(m_range, np.fft.fftshift(filter_h))
         plt.subplot(3, 1, 3)
         plt.title('filtered')
         plt.plot(np.abs(result_sound))
         plt.show()
 
-    return result_sound
+    return band_pass
 
 def reponse_echelon(Order, fc):
 
@@ -215,9 +218,9 @@ def note_guitare(file_name, should_plot):
     freq_gain = np.abs( np.fft.fft(sample_arr) )
     freq_db = 20*np.log10(freq_gain)
 
-    harmonics_freq, harmonics_gains = get_peaks(freq_gain, False) # get gains of 32 first harmonics
+    harmonics_freq, harmonics_gains = get_peaks(freq_gain, True) # get gains of 32 first harmonics
     if should_plot: print('harmonics_gains: ' + str(harmonics_gains))
-    sound = get_sounds(440.0, harmonics_gains, sample_count, sample_rate, False)
+    sound = get_sounds(466.2, harmonics_gains, sample_count, sample_rate, False)
 
     envelop = make_envelop(sample_arr, sample_count, False)
     if should_plot: print('len sample: ' + str(sample_count) + ' , len envelop: ' + str(len(envelop)))
@@ -250,7 +253,7 @@ def note_guitare(file_name, should_plot):
         plt.title('Original sound')
         plt.plot(sample_arr)
         plt.subplot(2, 1, 2)
-        plt.title('Final sound')
+        plt.title('Generated sound')
         plt.plot(synth)
         plt.show()
 
@@ -260,9 +263,12 @@ def note_basson(file_name, should_plot):
     sample_count = len(sample_arr)
     if should_plot: print('sample rate: ' + str(sample_rate))
 
-    denoise = band_cut(sample_arr, sample_count, sample_rate, True)
+    band_filter = band_cut(sample_arr, sample_count, sample_rate, True)
+    filtered = np.fft.fft(sample_arr) * np.fft.fft(band_filter)
+    cleaned_sound = np.fft.ifft(filtered)
+    sf.write('synth_basson.wav', 1 * np.real(cleaned_sound), sample_rate)
 
-    sf.write('synth_basson.wav', 1 * np.abs(denoise), sample_rate)
+    x_scale = np.arange(-sample_count/2, sample_count/2)
 
     if should_plot:
         plt.subplot(4, 1, 1)
@@ -270,8 +276,18 @@ def note_basson(file_name, should_plot):
         plt.plot(sample_arr)
 
         plt.subplot(4, 1, 2)
-        plt.title('band cut filter')
-        plt.plot(denoise)
+        plt.title('Filtered sound')
+        plt.plot(cleaned_sound)
+
+        plt.subplot(4, 1, 3)
+        plt.title('Original sound (freq)')
+        plt.plot(x_scale, np.fft.fftshift(np.fft.fft(sample_arr)))
+        plt.xlim(-10000, 10000)
+
+        plt.subplot(4, 1, 4)
+        plt.title('Filtered sound (freq)')
+        plt.plot(x_scale, np.fft.fftshift(np.fft.fft(cleaned_sound)))
+        plt.xlim(-10000, 10000)
 
         plt.show()
 
@@ -280,6 +296,6 @@ if __name__ == '__main__':
 
     note_basson('note_basson_plus_sinus_1000_hz.wav', True)
 
-    note_guitare('note_guitare_lad.wav', False)
+    note_guitare('note_guitare_lad.wav', True)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
