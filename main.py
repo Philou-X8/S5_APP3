@@ -31,23 +31,24 @@ def band_cut(sample_arr, sample_count, sample_rate, should_plot):
     print(len(filter2_H))
 
     center_range = np.arange(-sample_count/2, sample_count/2)
+    #center_range = np.arange(sample_count)
     diracte = np.zeros(sample_count)
     diracte[0] = 1
 
     #print(len(center_range))
     #band_pass = filter2_H * ((-1) ** center_range)
-    band_pass = diracte - 2*filter2_H * np.cos(w*center_range) # <-----------------------
+    band_pass = diracte - 2.0 * np.fft.ifft(filter2_H) * np.cos(w*center_range) # <-----------------------
 
-    plt.plot(np.fft.fftshift(np.real(np.fft.fft(band_pass))))
+    plt.plot(center_range, np.fft.fftshift(np.real(np.fft.fft(band_pass))))
     plt.show()
     #band_pass = band_pass[]
 
     plt.subplot(2, 1, 1)
-    plt.title('filter (h)')
-    plt.plot( np.abs(filter2_h) )
+    plt.title('pulse (h)')
+    plt.plot(n, np.abs(filter2_h) )
     plt.subplot(2, 1, 2)
-    plt.title('filter (H)')
-    plt.plot(np.fft.fftshift(np.abs(filter2_H)) )
+    plt.title('pulse (H)')
+    plt.plot(center_range, np.fft.fftshift(np.abs(filter2_H)) )
     plt.show()
 
     sample_db = 20*np.log10( np.abs( np.fft.fft(sample_arr) ) )
@@ -64,10 +65,10 @@ def band_cut(sample_arr, sample_count, sample_rate, should_plot):
     if should_plot:
         plt.subplot(3, 1, 1)
         plt.title('sample freq')
-        plt.plot(np.fft.fftshift(np.abs(np.fft.fft(sample_arr))))
+        plt.plot(center_range, np.fft.fftshift(np.abs(np.fft.fft(sample_arr))))
         plt.subplot(3, 1, 2)
         plt.title('filter (H)')
-        plt.plot(np.fft.fftshift(np.abs(np.fft.fft(band_pass))))
+        plt.plot(center_range, np.fft.fftshift(np.abs(np.fft.fft(band_pass))))
         #plt.plot(m_range, np.fft.fftshift(filter_h))
         plt.subplot(3, 1, 3)
         plt.title('filtered')
@@ -258,6 +259,8 @@ def note_basson(file_name, should_plot):
     if should_plot: print('sample rate: ' + str(sample_rate))
 
     denoise = band_cut(sample_arr, sample_count, sample_rate, True)
+
+    sf.write('synth_basson.wav', 20 * np.abs(denoise), sample_rate)
 
     if should_plot:
         plt.subplot(4, 1, 1)
