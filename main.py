@@ -113,9 +113,12 @@ def note_guitare(file_name, should_plot):
 
     harmonics_freq, harmonics_gains = get_peaks(freq_gain, False) # get gains of 32 first harmonics
     print(harmonics_gains)
-    get_sounds(440.0, harmonics_gains, sample_count, sample_rate, False)
+    sound = get_sounds(440.0, harmonics_gains, sample_count, sample_rate, False)
 
-    make_envelop(sample_arr, sample_rate, False)
+    envelop = make_envelop(sample_arr, sample_rate, False)
+
+    synth = 10*sound * envelop
+    sf.write('synth_sound_guitar.wav', synth, sample_rate)
 
     if should_plot:
         plt.subplot(2, 1, 1)
