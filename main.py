@@ -287,9 +287,9 @@ def note_basson(file_name, should_plot):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    temp = 466.2 * np.arange(1, 33)
-    print(repr(temp))
-    exit(0)
+    #temp = 466.2 * np.arange(1, 33)
+    #print(repr(temp))
+
     note_basson('note_basson_plus_sinus_1000_hz.wav', True)
 
     note_guitare('note_guitare_lad.wav', True)
