@@ -107,8 +107,9 @@ def make_envelop(sample_arr, sample_count, should_plot):
 
     if should_plot:
         plt.subplot(2, 1, 1)
-        plt.title('Envelop\'s filter impulse response'); plt.xlabel("Sample index (m)"); plt.ylabel("gain")
-        plt.plot(np.arange(-test_N/2, test_N/2+1), np.abs(impulse_response))
+        plt.title('Envelop\'s filter impulse response'); plt.xlabel("Sample index (m)"); plt.ylabel("Mag (dB)")
+        #plt.plot(np.arange(-test_N/2, test_N/2+1), np.abs(impulse_response))
+        plt.plot(np.arange(-test_N/2+1, test_N/2), to_freq_to_dB(impulse_response)[1:int(test_N)])
         plt.subplot(2, 1, 2)
         plt.title('Envelop'); plt.xlabel("Sample index (n)"); plt.ylabel("gain")
         plt.plot(np.abs(envelop))
@@ -202,7 +203,7 @@ def note_guitare(file_name, should_plot):
     if should_plot: print('harmonics_gains: ' + str(harmonics_gains))
     sound = get_sounds(466.2, harmonics_gains, sample_count, sample_rate, False) # generate new sound
 
-    envelop = make_envelop(sample_arr, sample_count, False) # generate envelop
+    envelop = make_envelop(sample_arr, sample_count, True) # generate envelop
 
     synth = sound * envelop # synthesize the note
 
@@ -254,14 +255,37 @@ def note_basson(file_name, should_plot):
     sample_count = len(sample_arr)
     if should_plot: print('sample rate: ' + str(sample_rate))
 
-    band_filter = band_cut(sample_arr, sample_count, sample_rate, False)
+    band_filter = band_cut(sample_arr, sample_count, sample_rate, True)
     filtered = np.fft.fft(sample_arr) * np.fft.fft(band_filter)
     cleaned_sound = np.fft.ifft(filtered)
     sf.write('synth_basson.wav', 1 * np.real(cleaned_sound), sample_rate)
 
     #get_peaks(np.fft.fft(cleaned_sound), False)
 
+
     x_scale = np.arange(-sample_count/2, sample_count/2)
+
+    freq1000 = np.round((1000 / sample_rate) * sample_count).astype(int)
+    temp_sin_H = np.zeros(sample_count)
+    temp_sin_H[int(freq1000)] = 1
+    temp_sin_H[int(sample_count- freq1000)] = 1
+
+    damped_sin = np.fft.ifft( np.fft.fft(band_filter) * temp_sin_H)
+    plt.subplot(2, 1, 1)
+    plt.title('pure sin (H)'); plt.xlabel("Sample index (n)"); plt.ylabel("Gain")
+    plt.plot(x_scale, np.fft.fftshift( temp_sin_H))
+
+    plt.subplot(2, 1, 2)
+    plt.title('pure sin (h)'); plt.xlabel("Sample index (m)"); plt.ylabel("Gain")
+    plt.plot( np.fft.ifft(temp_sin_H))
+
+    plt.subplot(2, 1, 2)
+    #plt.title('filtered sin (h)');
+    plt.plot( damped_sin, 'g')
+
+    plt.show()
+
+
 
     if should_plot:
         plt.subplot(4, 1, 1)
@@ -292,6 +316,6 @@ if __name__ == '__main__':
 
     note_basson('note_basson_plus_sinus_1000_hz.wav', True)
 
-    note_guitare('note_guitare_lad.wav', True)
+    note_guitare('note_guitare_lad.wav', False)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
