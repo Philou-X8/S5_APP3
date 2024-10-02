@@ -197,6 +197,8 @@ def note_guitare(file_name, should_plot):
     freq_db = 20*np.log10(freq_gain)
 
     harmonics_freq, harmonics_gains = get_peaks(freq_gain, False) # get gains of 32 first harmonics
+    #retarded_print = "{:,2f}".format(harmonics_gains)
+    np.set_printoptions(suppress=True)
     if should_plot: print('harmonics_gains: ' + str(harmonics_gains))
     sound = get_sounds(466.2, harmonics_gains, sample_count, sample_rate, False) # generate new sound
 
@@ -229,12 +231,21 @@ def note_guitare(file_name, should_plot):
         plt.show()
 
 
-        plt.subplot(2, 1, 1)
+        plt.subplot(4, 1, 1)
         plt.title('Original sound (x)'); plt.xlabel("Sample index (n)"); plt.ylabel("Gain")
         plt.plot(sample_arr)
-        plt.subplot(2, 1, 2)
+        plt.subplot(4, 1, 2)
         plt.title('Synthesized sound (y)'); plt.xlabel("Sample index (n)"); plt.ylabel("Gain")
         plt.plot(synth)
+
+        plt.subplot(4, 1, 3)
+        plt.title('Original sound (X)'); plt.xlabel("Sample index (m)"); plt.ylabel("Mag (dB)")
+        plt.plot(x_scale, to_freq_to_dB(sample_arr))
+
+        plt.subplot(4, 1, 4)
+        plt.title('Filtered sound (Y)'); plt.xlabel("Sample index (m)"); plt.ylabel("Mag (dB)")
+        plt.plot(x_scale, to_freq_to_dB(synth))
+
         plt.show()
 
 
@@ -248,7 +259,7 @@ def note_basson(file_name, should_plot):
     cleaned_sound = np.fft.ifft(filtered)
     sf.write('synth_basson.wav', 1 * np.real(cleaned_sound), sample_rate)
 
-    get_peaks(np.fft.fft(cleaned_sound), False)
+    #get_peaks(np.fft.fft(cleaned_sound), False)
 
     x_scale = np.arange(-sample_count/2, sample_count/2)
 
@@ -262,24 +273,25 @@ def note_basson(file_name, should_plot):
         plt.plot(cleaned_sound)
 
         plt.subplot(4, 1, 3)
-        plt.title('Original sound (X)'); plt.xlabel("Sample index (m)"); plt.ylabel("Gain")
+        plt.title('Original sound (X)'); plt.xlabel("Sample index (m)"); plt.ylabel("Mag (dB)")
         #plt.plot(x_scale, np.fft.fftshift(np.fft.fft(sample_arr)))
         plt.plot(x_scale, to_freq_to_dB(sample_arr))
-        plt.xlim(-10000, 10000)
 
         plt.subplot(4, 1, 4)
-        plt.title('Filtered sound (Y)'); plt.xlabel("Sample index (m)"); plt.ylabel("Gain")
+        plt.title('Filtered sound (Y)'); plt.xlabel("Sample index (m)"); plt.ylabel("Mag (dB)")
         #plt.plot(x_scale, np.fft.fftshift(np.fft.fft(cleaned_sound)))
         plt.plot(x_scale, to_freq_to_dB(cleaned_sound))
-        plt.xlim(-10000, 10000)
 
         plt.show()
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
+    temp = 466.2 * np.arange(1, 33)
+    print(repr(temp))
+    exit(0)
     note_basson('note_basson_plus_sinus_1000_hz.wav', True)
 
-    note_guitare('note_guitare_lad.wav', False)
+    note_guitare('note_guitare_lad.wav', True)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
